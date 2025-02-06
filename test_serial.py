@@ -1,37 +1,55 @@
 import serial
 import time
 
-def test_serial_connection(ports=['/dev/ttyAMA0', '/dev/ttyAMA10', '/dev/ttyUSB0'], baudrate=9600):
-    for port in ports:
-        try:
-            print(f"\nTrying port {port}...")
-            # Try to open the serial port
-            ser = serial.Serial(port, baudrate, timeout=1)
-            print(f"✓ Successfully opened {port} at {baudrate} baud")
-            
-            # Test if we can write and read
-            test_message = b"TEST\n"
-            ser.write(test_message)
-            time.sleep(0.1)
-            
-            response = ser.read_all()
-            print(f"Sent: {test_message}")
-            print(f"Received: {response}")
-            
-            ser.close()
-            print("✓ Serial port closed successfully")
-            return port
-            
-        except serial.SerialException as e:
-            print(f"✗ Error on {port}: {str(e)}")
+def test_serial():
+    # Open serial port with explicit settings
+    ser = serial.Serial(
+        port='/dev/ttyAMA0',
+        baudrate=9600,
+        bytesize=serial.EIGHTBITS,
+        parity=serial.PARITY_NONE,
+        stopbits=serial.STOPBITS_ONE,
+        timeout=1,  # 1 second timeout
+        rtscts=False,  # Try with hardware flow control off
+        dsrdtr=False   # Try with hardware flow control off
+    )
     
-    print("\nNo working ports found. Troubleshooting tips:")
-    print("1. Check if the device is connected properly")
-    print("2. Verify the correct port name from the working max3232-test.py")
-    print("3. Ensure you have permissions (try 'sudo chmod 666 /dev/ttyAMA0')")
-    return None
+    try:
+        print(f"Serial port opened: {ser.name}")
+        print(f"Current settings: {ser.get_settings()}")
+        
+        # Set RTS/DTR lines (might help with power)
+        ser.setRTS(True)
+        ser.setDTR(True)
+        time.sleep(0.1)  # Give time for lines to settle
+        
+        # Test command (Status request) - removed \r\n as it might not be needed
+        test_command = b"<FF:01:03:ST::7E:G>"
+        print(f"\nSending test command (hex): {test_command.hex()}")
+        
+        # Send command
+        ser.write(test_command)
+        time.sleep(0.5)  # Wait for response
+        
+        # Read response with explicit byte count
+        response = ser.read(10)  # Try to read up to 10 bytes
+        if response:
+            print(f"Received response (hex): {response.hex()}")
+            print(f"Received response (ascii): {response}")
+        else:
+            print("No response received in first read")
+        
+        # Try reading any remaining data
+        if ser.in_waiting:
+            response = ser.read(ser.in_waiting)
+            print(f"Additional data (hex): {response.hex()}")
+            
+    finally:
+        # Reset lines before closing
+        ser.setRTS(False)
+        ser.setDTR(False)
+        ser.close()
+        print("\nSerial port closed")
 
 if __name__ == "__main__":
-    working_port = test_serial_connection()
-    if working_port:
-        print(f"\nSuccess! Working port is: {working_port}") 
+    test_serial() 
