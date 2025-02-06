@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OE10 Remote Control</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>OE10 Remote Control Interface</h1>
+        
+        <div class="control-panel">
+            <h2>Movement Control</h2>
+            <form id="moveForm">
+                <div class="input-group">
+                    <label for="pan">Pan Angle (°):</label>
+                    <input type="number" id="pan" name="pan" min="-180" max="180" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label for="tilt">Tilt Angle (°):</label>
+                    <input type="number" id="tilt" name="tilt" min="-90" max="90" step="0.1">
+                </div>
+                <button type="submit" class="btn">Move</button>
+            </form>
+        </div>
+
+        <div class="status-panel">
+            <h2>Status Information</h2>
+            <button id="statusBtn" class="btn">Refresh Status</button>
+            <div class="status-display">
+                <h3>Current Status:</h3>
+                <pre id="statusInfo">Click 'Refresh Status' to update</pre>
+                <h3>Debug Information:</h3>
+                <pre id="debugInfo">Click 'Refresh Status' to update</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Submit form via AJAX
+        document.getElementById('moveForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            
+            fetch('/move', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStatus();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to send command');
+            });
+        });
+
+        // Get status button
+        document.getElementById('statusBtn').addEventListener('click', updateStatus);
+
+        function updateStatus() {
+            fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('statusInfo').textContent = data.status;
+                    document.getElementById('debugInfo').textContent = data.debug;
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to get status');
+            });
+        }
+
+        // Update status immediately when page loads
+        updateStatus();
+    </script>
+</body>
+</html> 
