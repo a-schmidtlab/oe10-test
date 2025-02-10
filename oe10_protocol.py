@@ -53,8 +53,8 @@ class OE10Controller:
 
     def move_pan_to(self, degrees):
         """Move pan to specific position in degrees (0-360)"""
-        # Ensure degrees is within 0-360 range
-        degrees = degrees % 360
+        # Ensure degrees is within 0-360 range and convert to integer
+        degrees = int(degrees % 360)
         # Format position as 3-digit string
         pos = f"{degrees:03d}"
         command = self._format_command("PP", pos)
@@ -65,8 +65,8 @@ class OE10Controller:
 
     def move_tilt_to(self, degrees):
         """Move tilt to specific position in degrees (-90 to +90)"""
-        # Clamp degrees to valid range
-        degrees = max(-90, min(90, degrees))
+        # Clamp degrees to valid range and convert to integer
+        degrees = int(max(-90, min(90, degrees)))
         # Format position as 3-digit string
         pos = f"{abs(degrees):03d}"
         command = self._format_command("TP", pos)
