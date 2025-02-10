@@ -17,8 +17,56 @@ def move():
         tilt = float(request.form.get('tilt')) if request.form.get('tilt') else None
         
         # Issue move command and capture response
-        response = controller.move(pan=pan, tilt=tilt)
-        return jsonify({"success": True, "response": response})
+        result = controller.move(pan=pan, tilt=tilt)
+        return jsonify({"success": True, "response": result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/pan_left', methods=['POST'])
+def pan_left():
+    try:
+        result = controller.pan_left()
+        return jsonify({"success": True, "response": result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/pan_right', methods=['POST'])
+def pan_right():
+    try:
+        result = controller.pan_right()
+        return jsonify({"success": True, "response": result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/pan_stop', methods=['POST'])
+def pan_stop():
+    try:
+        result = controller.pan_stop()
+        return jsonify({"success": True, "response": result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/tilt_up', methods=['POST'])
+def tilt_up():
+    try:
+        result = controller.tilt_up()
+        return jsonify({"success": True, "response": result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/tilt_down', methods=['POST'])
+def tilt_down():
+    try:
+        result = controller.tilt_down()
+        return jsonify({"success": True, "response": result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/tilt_stop', methods=['POST'])
+def tilt_stop():
+    try:
+        result = controller.tilt_stop()
+        return jsonify({"success": True, "response": result})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -27,12 +75,31 @@ def status():
     try:
         # Return the current status and debug information
         status = controller.get_status()
-        debug = controller.debug_info()
-        return jsonify({
-            "success": True,
-            "status": status,
-            "debug": debug
-        })
+        return jsonify({"success": True, "status": status})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/protocol_version')
+def protocol_version():
+    try:
+        version = controller.get_protocol_version()
+        return jsonify({"success": True, "version": version})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/software_version')
+def software_version():
+    try:
+        version = controller.get_software_version()
+        return jsonify({"success": True, "version": version})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route('/debug')
+def debug():
+    try:
+        info = controller.debug_info()
+        return jsonify({"success": True, "info": info})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 

@@ -5,7 +5,6 @@ class MAX3232:
     def __init__(self, port='/dev/ttyAMA0', baudrate=9600, timeout=1):
         try:
             print(f"Attempting to open serial port {port}")
-            # Use the exact same configuration as max3232-test.py
             self.ser = serial.Serial(
                 port=port,
                 baudrate=baudrate,
@@ -19,17 +18,37 @@ class MAX3232:
             print(f"Error initializing serial connection: {e}")
             self.ser = None
 
-    def send_hex(self, hex_string):
-        """Send raw hex data. hex_string should be space-separated hex values."""
+    def send_hex(self, command_string):
+        """Send raw hex data. command_string should be a formatted protocol string."""
         if self.ser:
             try:
-                # Convert hex string to bytes
-                hex_bytes = bytes.fromhex(hex_string.replace(" ", ""))
-                print(f"Sending hex: {' '.join(f'{b:02X}' for b in hex_bytes)}")
+                # Convert protocol string to actual bytes
+                # Example input: "<FF:01:03:ST::7E:G>"
+                # Remove < > brackets and convert to bytes
+                command_bytes = bytearray()
                 
-                # Send the bytes directly like in max3232-test.py
-                self.ser.write(hex_bytes)
-                print(f"Sent {len(hex_bytes)} bytes")
+                # Add start bracket
+                command_bytes.append(0x3C)  # '<'
+                
+                # Process the middle part
+                parts = command_string.strip('<>').split(':')
+                for i, part in enumerate(parts):
+                    if i > 0:  # Add separator except for first part
+                        command_bytes.append(0x3A)  # ':'
+                    
+                    # Convert hex values
+                    if len(part) == 2 and all(c in '0123456789ABCDEF' for c in part.upper()):
+                        command_bytes.append(int(part, 16))
+                    else:
+                        # Add ASCII characters
+                        command_bytes.extend(part.encode())
+                
+                # Add end bracket
+                command_bytes.append(0x3E)  # '>'
+                
+                print(f"Sending bytes: {' '.join(f'{b:02X}' for b in command_bytes)}")
+                self.ser.write(command_bytes)
+                print(f"Sent {len(command_bytes)} bytes")
                 
                 # Small delay to ensure transmission
                 time.sleep(0.1)
@@ -37,10 +56,9 @@ class MAX3232:
                 print(f"Error sending data: {e}")
 
     def send(self, data):
-        """Send raw string data with CR/LF like max3232-test.py"""
+        """Send raw string data with CR/LF"""
         if self.ser:
             try:
-                # Add CR/LF like in max3232-test.py
                 message = data + "\r\n"
                 self.ser.write(message.encode())
                 print(f"Sent: {message.strip()}")
@@ -49,13 +67,32 @@ class MAX3232:
                 print(f"Error sending data: {e}")
 
     def read(self):
-        """Read response using the approach from max3232-test.py"""
+        """Read response"""
         if self.ser:
             try:
                 if self.ser.in_waiting:
-                    received = self.ser.readline().decode(errors='ignore').strip()
-                    print(f"Received: {received}")
-                    return received
+                    # Read until '>' is found or timeout
+                    response = bytearray()
+                    start_time = time.time()
+                    
+                    while (time.time() - start_time) < self.ser.timeout:
+                        if self.ser.in_waiting:
+                            byte = self.ser.read()
+                            response.extend(byte)
+                            if byte == b'>':  # End of message
+                                break
+                    
+                    if response:
+                        try:
+                            # Try to decode as ASCII first
+                            decoded = response.decode(errors='ignore')
+                            print(f"Received: {decoded}")
+                            return decoded
+                        except UnicodeDecodeError:
+                            # If ASCII decode fails, return hex representation
+                            hex_str = ' '.join(f'{b:02X}' for b in response)
+                            print(f"Received hex: {hex_str}")
+                            return hex_str
                 return ""
             except Exception as e:
                 print(f"Error reading data: {e}")
