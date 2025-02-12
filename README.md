@@ -1,42 +1,47 @@
-# OE10 Remote Control Project
-# NOT WORKING YET
+# OE10 Pan/Tilt Control Interface
 
-## Overview
-
-This project implements a web-based remote control interface for the OE10 pan and tilt unit. The system uses a Raspberry Pi 5 running Debian as the controller, connected to the OE10 via an ARCELI MAX3232 serial adapter.
+A web-based control interface for the OE10-104 Serial Pan and Tilt Unit. This application provides a user-friendly way to control and monitor the OE10 device through a web browser.
 
 ## Features
 
-- Web-based control interface
 - Real-time pan and tilt control
+- Absolute position movement
+- Proportional speed control
 - Status monitoring
-- Debug information display
-- Responsive design
-- Error handling and user feedback
+- Protocol and software version information
+- Clean and responsive web interface
 
 ## Hardware Requirements
 
-- Raspberry Pi 5 (running Debian)
+- Raspberry Pi (tested on Pi 5)
 - ARCELI MAX3232 serial adapter
-- OE10 pan and tilt unit
+- OE10-104 Pan/Tilt Unit
+- Power supply for OE10
 
-## Software Requirements
+## Hardware Setup
 
-- Python 3.x
-- Flask
-- PySerial
+1. Connect the ARCELI MAX3232 module to the Raspberry Pi:
+   - Connect MAX3232's TTL-level RX to Pi's TX (GPIO14)
+   - Connect MAX3232's TTL-level TX to Pi's RX (GPIO15)
+   - Connect GND between Pi and MAX3232
+   - Power MAX3232 with 3.3V or 5V from Pi
 
-## Installation
+2. Connect the MAX3232 to the OE10:
+   - Connect MAX3232's RS232 RX to OE10's TX
+   - Connect MAX3232's RS232 TX to OE10's RX
+   - Connect GND between MAX3232 and OE10
 
-1. Clone this repository:
+## Software Installation
+
+1. Clone the repository:
    ```bash
-   git clone <repository-url>
-   cd oe10-project
+   git clone https://github.com/yourusername/oe10-control.git
+   cd oe10-control
    ```
 
 2. Create and activate a virtual environment:
    ```bash
-   python3 -m venv venv
+   python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
@@ -45,94 +50,90 @@ This project implements a web-based remote control interface for the OE10 pan an
    pip install -r requirements.txt
    ```
 
+4. Enable UART on Raspberry Pi:
+   ```bash
+   sudo raspi-config
+   # Navigate to Interface Options > Serial Port
+   # Disable serial login shell
+   # Enable serial interface
+   ```
+
+## Configuration
+
+The default configuration uses `/dev/ttyAMA0` for serial communication. If you need to change this:
+
+1. Open `oe10_protocol.py`
+2. Modify the default port in the `OE10Protocol` class initialization:
+   ```python
+   def __init__(self, port='/dev/ttyAMA0', baudrate=9600):
+   ```
+
 ## Usage
 
-1. Start the server:
+1. Start the application:
    ```bash
    python app.py
    ```
 
-2. Open a web browser and navigate to:
-   ```
-   http://<raspberry-pi-ip>:5000
-   ```
+2. Access the web interface:
+   - Open a web browser
+   - Navigate to `http://your_raspberry_pi_ip:5000`
 
-3. Use the web interface to:
-   - Control pan and tilt angles
-   - Monitor device status
-   - View debug information
+3. Control Interface Features:
+   - Use arrow buttons for directional control
+   - Enter specific angles for absolute positioning
+   - Monitor current position and status
+   - View protocol and software versions
 
-## Project Structure
+## API Endpoints
 
-- `app.py`: Flask server that serves the web interface and communicates with the OE10 via the OE10 protocol module.
-- `max3232.py`: Module that handles serial communication with the MAX3232 adapter.
-- `oe10_protocol.py`: Contains methods to communicate with the OE10 unit using its protocol.
-- `templates/index.html`: The web interface where users send control commands to the OE10 unit.
+- `GET /api/status` - Get current device status
+- `POST /api/move` - Move to absolute position
+- `POST /api/proportional` - Proportional movement control
+- `POST /api/stop` - Stop all movement
+- `GET /api/versions` - Get protocol and software versions
 
-oe10-project/
-├── app.py                    # Main Flask server
-├── oe10_protocol.py          # Handling communication protocol for OE10
-├── max3232.py               # Code to handle the MAX3232 serial adapter (adapted from max3232-test.py)
-├── static/
-│   └── styles.css           # (Optional) Basic styling for web interface
-├── templates/
-│   └── index.html           # Web interface HTML page
-├── README.md                # Project documentation
-└── requirements.txt         # Python dependencies
+## Protocol Implementation
 
+The application implements the OE10-104 communication protocol as specified in the protocol documentation. Key features include:
 
-## Debug Information
-
-The web interface displays detailed debug information regarding the communications with the OE10, including the current status of the unit and the low-level command logs.
+- Packet structure: `<to:from:length:command:data:checksum:checksum ind>`
+- XOR checksum calculation
+- ACK/NAK handling
+- Error detection and reporting
 
 ## Troubleshooting
 
-### No Response from OE10 Unit
-If commands are being sent but no responses are received:
+1. Serial Connection Issues:
+   - Verify UART is enabled on Raspberry Pi
+   - Check physical connections
+   - Verify serial port permissions
+   - Check baud rate settings
 
-1. Check Physical Connections
-   - Verify all cables are securely connected
-   - Ensure the MAX3232 adapter is properly powered
-   - Check TX/RX wire connections are not reversed
-   - Verify ground connection is solid
+2. Movement Issues:
+   - Verify power supply to OE10
+   - Check status response for errors
+   - Verify command format in protocol
 
-2. Serial Port Configuration
-   - Confirm baud rate matches OE10 specifications (typically 9600)
-   - Verify serial port settings:
-     ```bash
-     stty -F /dev/ttyUSB0 -a  # Replace with your port
-     ```
-   - Default settings should be:
-     - 9600 baud
-     - 8 data bits
-     - 1 stop bit
-     - No parity
-     - No flow control
+3. Web Interface Issues:
+   - Check Flask server is running
+   - Verify network connectivity
+   - Check browser console for errors
 
-3. Signal Verification
-   - Use a multimeter to check voltage levels:
-     - RS-232 signals should swing between +/-3V to +/-15V
-     - TTL signals should be 0V/3.3V or 0V/5V
-   - Monitor TX/RX LED indicators on the MAX3232 adapter if available
+## Contributing
 
-4. Software Checks
-   - Run with elevated permissions: `sudo python app.py`
-   - Verify correct serial port is selected
-   - Try different serial port timeouts
-   - Enable debug logging in PySerial:
-     ```python
-     import logging
-     logging.basicConfig(level=logging.DEBUG)
-     logging.getLogger('serial').setLevel(logging.DEBUG)
-     ```
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-### Testing Serial Communication
-Use the following command to test basic serial port functionality:
-```bash
-echo "test" > /dev/ttyUSB0  # Replace with your port
-```
+## License
 
-For a loopback test, connect TX to RX and run:
-```bash
-python3 -m serial.tools.miniterm /dev/ttyUSB0 9600
-```
+[Your chosen license]
+
+## Acknowledgments
+
+- OE10-104 Protocol Documentation
+- Flask Web Framework
+- Bootstrap for UI components

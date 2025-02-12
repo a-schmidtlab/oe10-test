@@ -79,4 +79,35 @@ h3 {
     color: #666;
     margin: 15px 0 10px 0;
     font-size: 16px;
+}
+
+.control-btn {
+    width: 60px;
+    height: 60px;
+    margin: 5px;
+    font-size: 24px;
+}
+
+.status-panel {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.control-panel {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.error-message {
+    color: #dc3545;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #dc3545;
+    border-radius: 5px;
+    background-color: #f8d7da;
 } 
